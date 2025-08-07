@@ -18,7 +18,7 @@
       <!-- 固定页脚 -->
       <a-layout-footer class="app-footer">
         <div class="footer-container">
-          <div class="copyright">©2023 版权所有</div>
+          <div class="copyright">©2025 版权所有</div>
           <div class="links">
             <a>帮助</a>
             <a-divider type="vertical" />

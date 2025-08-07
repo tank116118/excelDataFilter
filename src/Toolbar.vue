@@ -19,23 +19,12 @@
         />
       </div>
       
-      <!-- ID查询 -->
+      <!-- 原ID查询 -->
       <div class="query-item">
         <span class="query-label">ID：</span>
         <a-input
-          v-model:value="idQuery"
-          placeholder="ID"
-          style="width: 120px"
-          @pressEnter="handleSearch"
-        />
-      </div>
-
-      <!-- 原ID查询 -->
-      <div class="query-item">
-        <span class="query-label">原ID：</span>
-        <a-input
           v-model:value="originalID"
-          placeholder="原ID"
+          placeholder="ID"
           style="width: 120px"
           @pressEnter="handleSearch"
         />
@@ -50,6 +39,26 @@
           style="width: 120px"
           @pressEnter="handleSearch"
         />
+      </div>
+
+      <!-- 排序方式 -->
+      <div class="query-item">
+        <span class="query-label">排序：</span>
+        <a-select
+          v-model:value="sortField"
+          style="width: 120px"
+          placeholder="选择排序字段"
+        >
+          <a-select-option value="originalID">ID</a-select-option>
+          <a-select-option value="userName">用户名</a-select-option>
+          <a-select-option value="createdAt">创建时间</a-select-option>
+        </a-select>
+        <a-checkbox
+          v-model:checked="isDescending"
+          style="margin-left: 8px"
+        >
+          降序
+        </a-checkbox>
       </div>
       
       <!-- 查询按钮 -->
@@ -125,10 +134,11 @@ const searchStore = useSearchStore()
 
 // 查询条件
 const dateRange = ref<[Dayjs, Dayjs]>()
-const idQuery = ref('')
 const originalID = ref('')
 const usernameQuery = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
+const sortField = ref('createdAt') // 默认排序字段
+const isDescending = ref(true) // 默认降序
 
 // 处理日期范围变化
 const handleDateChange = (dates: [Dayjs, Dayjs]) => {
@@ -139,9 +149,10 @@ const handleDateChange = (dates: [Dayjs, Dayjs]) => {
 const handleSearch = () => {
   searchStore.setSearchParams({
     dateRange: dateRange.value,
-    id: idQuery.value,
     originalID: originalID.value,
     username: usernameQuery.value,
+    sortField: sortField.value,
+    isDescending: isDescending.value,
     page: 1 // 重置页码
   })
   searchStore.executeSearch()
@@ -151,8 +162,10 @@ const handleSearch = () => {
 const handleReset = () => {
   searchStore.resetSearchParams()
   dateRange.value = undefined
-  idQuery.value = ''
+  originalID.value = ''
   usernameQuery.value = ''
+  sortField.value = 'createdAt'
+  isDescending.value = true
 }
 
 // 导入
@@ -197,16 +210,11 @@ const handleImportFile = async (event: Event) => {
       return;
     }
 
-    const userDB = new UserDatabase('excel-date-filter');
-    await userDB.initialize();
-    await userDB.dropTable();
-    userDB.close()
-    
     // 去掉表头
     data = data.slice(1); 
 
     // 显示进度条
-    progress.show({ percent: 0, status: 'active' });
+    progress.show({ percent: 0, status: 'active', type: 'circle' });
 
     // 使用异步分批处理
     const total = data.length;
@@ -269,6 +277,9 @@ const handleImportFile = async (event: Event) => {
     progress.update(100, { status: 'success' });
     message.success(`导入成功，共处理 ${total} 条数据`);
 
+    // 重新加载数据
+    searchStore.resetSearchParams();
+    handleSearch();
   } catch (error) {
     console.error('导入失败:', error);
     progress.update(0, { status: 'exception' });
@@ -282,8 +293,18 @@ const handleExport = () => {
   message.info('点击了导出按钮')
 }
 
-const handleDeduplicate = () => {
-  message.info('点击了去重按钮')
+const handleDeduplicate = async () => {
+  const userDB = new UserDatabase('excel-date-filter');
+  await userDB.initialize();
+
+  const removedCount = await userDB.removeDuplicates(['userName', 'email'], false);
+  message.success(`成功删除 ${removedCount} 条重复数据`);
+  if (removedCount > 0) {
+    searchStore.resetSearchParams();
+    handleSearch();
+  }
+
+  userDB.close()
 }
 
 const handleRefresh = () => {

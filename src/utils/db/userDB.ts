@@ -1070,12 +1070,65 @@ private async getTableInfo(): Promise<any> {
     return !!(result.results && result.results[0] && result.results[0].values && result.results[0].values.length > 0);
  }
 
- public async checkPrimaryKey(): Promise<void> {
+  public async checkPrimaryKey(): Promise<void> {
     const result = await this.execQuery(
       `SELECT sql FROM sqlite_master WHERE type='table' AND name='${this.tableName}'`
     );
     console.log('Table definition:', result.results?.[0]?.values[0]?.[0]);
-}
+  } 
+
+  /**
+   * 删除重复记录，保留每个唯一键组中的第一条记录（按createdAt或id排序）
+   * @param fields 要去重的字段名或字段数组
+   * @param keepOldest 是否保留最旧的记录（按createdAt），否则保留最小ID
+   */
+  public async removeDuplicates(
+    fields: string | string[],
+    keepOldest: boolean = true
+  ): Promise<number> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // 统一处理字段为数组
+    const fieldArray = Array.isArray(fields) ? fields : [fields];
+    const fieldsStr = fieldArray.join(', ');
+
+    try {
+      // 使用事务确保操作原子性
+      return await this.transaction(async () => {
+        // 1. 创建临时表存储要保留的记录
+        await this.execQuery(`
+          CREATE TEMP TABLE IF NOT EXISTS temp_keep_records AS
+          SELECT ${keepOldest ? 'MIN(id)' : 'id'} as keep_id
+          FROM ${this.tableName}
+          GROUP BY ${fieldsStr}
+          ${keepOldest ? 'ORDER BY createdAt ASC' : ''}
+        `);
+
+        // 2. 删除不在保留列表中的重复记录
+        const deleteResult = await this.execQuery(`
+          DELETE FROM ${this.tableName}
+          WHERE id NOT IN (SELECT keep_id FROM temp_keep_records)
+          AND (${fieldsStr}) IN (
+            SELECT ${fieldsStr} 
+            FROM ${this.tableName}
+            GROUP BY ${fieldsStr}
+            HAVING COUNT(*) > 1
+          )
+        `);
+
+        // 3. 清理临时表
+        await this.execQuery('DROP TABLE IF EXISTS temp_keep_records');
+
+        return deleteResult.changes || 0;
+      });
+    } catch (error) {
+      console.error('Failed to remove duplicates:', {
+        fields,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+  }
 }
 
 export default UserDatabase;

@@ -3,7 +3,7 @@ import './style.css'
 import App from './App.vue'
 import router from './router'
 import { createPinia } from 'pinia'
-import 'ant-design-vue/dist/reset.css';
+import 'ant-design-vue/dist/reset.css'; // 必须：基础重置样式
 
 // 正确用法：先创建应用实例，再挂载插件
 const app = createApp(App)
