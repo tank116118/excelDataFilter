@@ -1,7 +1,12 @@
 {
+  "compilerOptions": {
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
+  },
   "files": [],
   "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+    { "path": "./tsconfig.app.json" },// 前端应用配置
+    { "path": "./tsconfig.node.json" },// Node服务配置
+    { "path": "./tsconfig.server.json" }   // 新增：打包配置
   ]
 }

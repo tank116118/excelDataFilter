@@ -75,7 +75,7 @@ export default defineComponent({
       
       const gradientConfig = props.gradient || defaultGradient;
       
-      if (gradientConfig.colors) {
+      if ('colors' in gradientConfig && gradientConfig.colors) {
         // 自定义颜色节点
         return gradientConfig.colors;
       } else {

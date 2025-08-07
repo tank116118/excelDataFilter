@@ -8,7 +8,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { defineComponent, ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import type { PropType } from 'vue';
 
 type ProgressType = 'line' | 'circle' | 'dashboard';
 type StrokeColor = string | { [key: string]: string } | string[];

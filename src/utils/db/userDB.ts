@@ -326,30 +326,6 @@ class UserDatabase {
   }
 }
 
-/**
- * 获取表结构信息用于调试
- */
-private async getTableInfo(): Promise<any> {
-  try {
-    if (!this.db) return 'Database not initialized';
-    
-    const tableInfo = await this.execQuery(
-      `PRAGMA table_info(${this.tableName})`
-    );
-    
-    const indexes = await this.execQuery(
-      `PRAGMA index_list(${this.tableName})`
-    );
-    
-    return {
-      tableStructure: tableInfo.results?.[0]?.values,
-      indexes: indexes.results?.[0]?.values
-    };
-  } catch (error) {
-    return `Failed to get table info: ${error instanceof Error ? error.message : String(error)}`;
-  }
-}
-
   /**
    * 批量添加用户
    */

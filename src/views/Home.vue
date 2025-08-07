@@ -4,7 +4,7 @@
     <a-table
       :columns="columns"
       :data-source="data"
-      :row-key="record => record.id"
+      :row-key="(record: DataItem) => record.id"
       :pagination="pagination"
       :scroll="{ x: 'max-content', y: tableScrollY }"
       bordered

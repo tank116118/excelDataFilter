@@ -141,9 +141,9 @@ export class ExcelBrowserHelper {
    */
   public getSheetData(sheet: ExcelJS.Worksheet): any[][] {
     const data: any[][] = [];
-    sheet.eachRow((row, rowNumber) => {
+    sheet.eachRow((row) => {
       const rowData: any[] = [];
-      row.eachCell((cell, colNumber) => {
+      row.eachCell((cell) => {
         rowData.push(cell.value);
       });
       data.push(rowData);

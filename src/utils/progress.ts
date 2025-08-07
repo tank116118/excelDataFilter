@@ -52,7 +52,7 @@ class ProgressService {
       this.app.mount(this.container);
       
       // 添加状态变化监听
-      watch(this.state, (newState) => {
+      watch(this.state, () => {
         if (this.app) {
           // 强制更新组件
           this.app._instance?.proxy?.$forceUpdate();

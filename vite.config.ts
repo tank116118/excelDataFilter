@@ -41,5 +41,11 @@ export default defineConfig({
       usePolling: true, // 在某些 Docker/WSL2 环境下需要
       interval: 100 // 轮询间隔(ms)
     }
+  },
+  build: {
+    rollupOptions: {
+      external: ['fs', 'path', 'crypto'] // 排除Node核心模块
+    },
+    chunkSizeWarningLimit: 1000 // 增大chunk大小限制
   }
 })

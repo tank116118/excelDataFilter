@@ -1,35 +1,69 @@
 {
   "name": "excel-data-filter",
-  "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "serve": "node dist-server/index.js",
+    "build": "vite build",
+    "build:server": "tsc -b tsconfig.server.json",
+    "dev": "vite --port 3000",
+    "electron:build": "vue-cli-service electron:build",
+    "electron:serve": "vue-cli-service electron:serve",
+    "package": "node build-pkg.js",
+    "postinstall": "electron-builder install-app-deps",
+    "postuninstall": "electron-builder install-app-deps",
+    "start": "node dist-server/index.js"
   },
+  "main": "background.js",
   "dependencies": {
     "@ant-design/icons-vue": "^7.0.1",
+    "@types/express": "^5.0.3",
+    "compression": "^1.8.1",
     "exceljs": "^4.4.0",
+    "express": "^5.1.0",
     "file-saver": "^2.0.5",
+    "path-to-regexp": "6.2.1",
     "pinia": "^3.0.3",
+    "serve": "^14.2.4",
     "sql.js": "^1.13.0",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@ant-design/colors": "^7.2.1",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
+    "@types/compression": "^1.8.1",
     "@types/file-saver": "^2.0.7",
+    "@types/http-proxy-middleware": "^0.19.3",
     "@types/node": "^24.2.0",
     "@types/sql.js": "^1.4.9",
-    "@vitejs/plugin-vue": "^6.0.0",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vue/cli-service": "^5.0.8",
     "@vue/tsconfig": "^0.7.0",
     "ant-design-vue": "^4.2.6",
     "consola": "^3.4.2",
+    "electron": "^13.0.0",
+    "electron-devtools-installer": "^3.1.0",
     "less": "^4.4.0",
-    "typescript": "~5.8.3",
+    "pkg": "^5.8.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
     "unplugin-vue-components": "^28.8.0",
     "vite": "^7.0.4",
+    "vue-cli-plugin-electron-builder": "~2.1.1",
     "vue-tsc": "^2.2.12"
-  }
+  },
+  "bin": "dist-server/index.js",
+  "pkg": {
+    "assets": [
+      "dist/**/*",
+      "public/**/*"
+    ],
+    "scripts": "dist-server/**/*.js",
+    "targets": [
+      "node16-win-x64"
+    ],
+    "output": "server-app"
+  },
+  "type": "commonjs"
 }
