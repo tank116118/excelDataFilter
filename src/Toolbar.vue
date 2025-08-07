@@ -120,7 +120,6 @@ import { ExcelBrowserHelper } from './utils/excel/excelBrowser'
 import UserDatabase from './utils/db/userDB'
 import progress from './utils/progress'
 
-
 const emit = defineEmits([
   'search',
   'reset',
@@ -137,6 +136,7 @@ const dateRange = ref<[Dayjs, Dayjs]>()
 const originalID = ref('')
 const usernameQuery = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
+
 const sortField = ref('createdAt') // 默认排序字段
 const isDescending = ref(true) // 默认降序
 
@@ -164,7 +164,7 @@ const handleReset = () => {
   dateRange.value = undefined
   originalID.value = ''
   usernameQuery.value = ''
-  sortField.value = 'createdAt'
+  sortField.value = 'createdAt' // 重置排序字段
   isDescending.value = true
 }
 
@@ -289,8 +289,106 @@ const handleImportFile = async (event: Event) => {
   }
 };
 
-const handleExport = () => {
-  message.info('点击了导出按钮')
+const handleExport = async() => {
+  const userDB = new UserDatabase('excel-date-filter');
+  await userDB.initialize();
+
+  let conditions: any = {}
+  if (dateRange.value) {
+    conditions.createdAfter = dateRange.value[0].toDate();
+    conditions.createdAfter.setHours(0, 0, 0, 0);
+    conditions.createdBefore = dateRange.value[1].toDate();
+    conditions.createdBefore.setHours(23, 59, 59, 999);
+  }
+
+  if (originalID.value !== undefined && originalID.value !== null && originalID.value !== '') {
+    conditions.originalID = Number(originalID.value);
+  }
+
+  if (usernameQuery.value) {
+    conditions.userName = usernameQuery.value;
+  }
+
+  let sortOrder: 'DESC' | 'ASC' = 'DESC'
+  if (!isDescending.value) {
+    sortOrder = 'ASC'
+  }
+
+  const userListResult = await userDB.queryUsers(
+    conditions,
+    1,
+    999999999,
+    sortField.value,
+    sortOrder
+  );
+  
+  const users = userListResult.data || [];
+  if (users.length > 0) {
+    const exportData = users.map((user: any) => ({
+        'ID': user.originalID,
+        '用户名': user.userName,
+        '全名': user.fullName,
+        '个人主页': user.profileUrl,
+        '头像': user.avatarUrl,
+        '验证状态': user.isVerified ? 'Yes' : 'No',
+        '帖子数': user.posts,
+        '邮箱': user.email,
+        '电话': user.phone,
+        '关注数': user.following,
+        '粉丝数': user.followers,
+        '简介': user.biography,
+        '城市': user.city,
+        '地址': user.address,
+        '隐私状态': user.isPrivate ? 'Yes' : 'No',
+        '商业账号': user.isBusiness ? 'Yes' : 'No',
+        '外部链接': user.externalUrl,
+        '分类链接': user.categoryUrl,
+        '已关注': user.followedByYou
+      }));
+
+    const excelHelper = new ExcelBrowserHelper();
+    
+    try {
+      // 创建默认文件名
+      const defaultFileName = `用户数据导出_${new Date().toLocaleDateString()}.xlsx`;
+      
+      await excelHelper.exportToExcel(exportData, {
+        fileName: defaultFileName,
+        sheetName: '用户数据',
+        headerStyle: {
+          font: { bold: true, color: { argb: 'FFFFFFFF' } },
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0070C0' } },
+          alignment: { vertical: 'middle', horizontal: 'center' }
+        },
+        columnWidths: {
+          'ID': 10,
+          '用户名': 20,
+          '全名': 25,
+          '个人主页': 30,
+          '头像': 30,
+          '验证状态': 15,
+          '帖子数': 10,
+          '邮箱': 30,
+          '电话': 30,
+          '关注数': 10,
+          '粉丝数': 10,
+          '简介': 40,
+          '城市': 10,
+          '地址': 30,
+          '隐私状态': 15,
+          '商业账号': 15,
+          '外部链接': 30,
+          '分类链接': 30,
+          '已关注': 10
+        }
+      });
+
+    } catch (error) {
+      message.error('保存文件时出错: ' + error);
+    }
+  } else {
+    message.info('没有找到符合条件的数据');
+  }
 }
 
 const handleDeduplicate = async () => {

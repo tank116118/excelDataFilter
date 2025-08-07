@@ -465,7 +465,7 @@ private async getTableInfo(): Promise<any> {
     conditions: QueryConditions = {},
     page: number = 1,
     pageSize: number = 10,
-    sortField: keyof User = 'userName',
+    sortField: string | null = null,
     sortOrder: 'ASC' | 'DESC' = 'ASC'
   ): Promise<PaginatedResult<User>> {
     const { whereClause, params } = this.buildWhereClause(conditions);
@@ -481,6 +481,10 @@ private async getTableInfo(): Promise<any> {
     const offset = (page - 1) * pageSize;
     const totalPages = Math.ceil(total / pageSize);
     
+    if (sortField == null){
+      sortField = 'createdAt';
+    }
+
     // 获取分页数据
     const dataResult = await this.execQuery(
       `SELECT * FROM ${this.tableName} 

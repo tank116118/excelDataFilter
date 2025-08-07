@@ -209,7 +209,7 @@ const columns = ref([
     key: 'posts'
   },
   {
-    title: 'Email',
+    title: '邮箱',
     dataIndex: 'email',
     width: 180,
     key: 'email'
@@ -235,7 +235,7 @@ const columns = ref([
     key: 'followers'
   },
   {
-    title: '个人简介',
+    title: '简介',
     dataIndex: 'biography',
     width: 200,
     ellipsis: true,

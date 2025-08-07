@@ -1,6 +1,14 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
+export interface ExportToExcelOptions {
+  fileName: string;
+  sheetName?: string;
+  headerStyle?: Partial<ExcelJS.Style>;
+  columnWidths?: Record<string, number>; // 例如: { 'ID': 10, '用户名': 20 }
+  dateFields?: string[]; // 需要特殊格式化的日期字段
+}
+
 export interface IExcelCellValue {
   value: any;
   style?: Partial<ExcelJS.Style>;
@@ -209,5 +217,90 @@ public getAlignedSheetData(sheet: ExcelJS.Worksheet): any[][] {
     style: Partial<ExcelJS.Style>
   ): void {
     sheet.getCell(row, col).style = style;
+  }
+
+  /**
+   * 将数据导出为Excel文件
+   * @param data 要导出的数据数组
+   * @param options 导出配置选项
+   */
+  public async exportToExcel(
+    data: Record<string, any>[],
+    options: ExportToExcelOptions
+  ): Promise<void> {
+    if (!data || data.length === 0) {
+      console.warn('没有数据可导出');
+      return;
+    }
+
+    // 创建工作簿和工作表
+    this.workbook = new ExcelJS.Workbook();
+    const sheetName = options.sheetName || 'Sheet1';
+    const worksheet = this.workbook.addWorksheet(sheetName);
+
+    // 获取所有键作为表头
+    const headers = Object.keys(data[0]);
+    
+    // 添加表头行
+    const headerRow = worksheet.addRow(headers);
+    
+    // 应用表头样式
+    if (options.headerStyle) {
+      headerRow.eachCell((cell) => {
+        cell.style = options.headerStyle as ExcelJS.Style;
+      });
+    }
+
+    // 添加数据行
+    data.forEach((item) => {
+      const rowData = headers.map((header) => {
+        // 特殊处理日期字段
+        if (options.dateFields?.includes(header)) {
+          return this.formatDate(item[header]);
+        }
+        return item[header];
+      });
+      worksheet.addRow(rowData);
+    });
+
+    // 设置列宽
+    if (options.columnWidths) {
+      headers.forEach((header, index) => {
+        const colNumber = index + 1;
+        if (options.columnWidths && options.columnWidths[header]) {
+          worksheet.getColumn(colNumber).width = options.columnWidths[header];
+        } else {
+          // 默认列宽
+          worksheet.getColumn(colNumber).width = 15;
+        }
+      });
+    }
+
+    // 生成并下载文件
+    const buffer = await this.workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    saveAs(blob, options.fileName);
+  }
+
+  /**
+   * 格式化日期
+   * @param date 日期对象或字符串
+   * @returns 格式化后的日期字符串
+   */
+  private formatDate(date: any): string {
+    if (!date) return '';
+    
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return String(date);
+    
+    return d.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }
