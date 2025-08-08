@@ -5,6 +5,7 @@ import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
 
 
 export default defineConfig({
+  base: './',
   plugins: [
     vue(),
     Components({
@@ -34,7 +35,7 @@ export default defineConfig({
       overlay: true, // 显示错误覆盖层
       protocol: 'ws', // 使用 WebSocket 协议
       host: 'localhost',
-      port: 5173, // 默认与 dev server 相同
+      port: 3000, // 默认与 dev server 相同
     },
     // 文件系统监听选项
     watch: {
@@ -43,9 +44,6 @@ export default defineConfig({
     }
   },
   build: {
-    rollupOptions: {
-      external: ['fs', 'path', 'crypto'] // 排除Node核心模块
-    },
     chunkSizeWarningLimit: 1000 // 增大chunk大小限制
   }
 })
