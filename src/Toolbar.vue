@@ -342,7 +342,7 @@ const handleExport = async() => {
         '隐私状态': user.isPrivate ? 'Yes' : 'No',
         '商业账号': user.isBusiness ? 'Yes' : 'No',
         '外部链接': user.externalUrl,
-        '分类链接': user.categoryUrl,
+        '链接分类': user.categoryUrl,
         '已关注': user.followedByYou
       }));
 
@@ -378,7 +378,7 @@ const handleExport = async() => {
           '隐私状态': 15,
           '商业账号': 15,
           '外部链接': 30,
-          '分类链接': 30,
+          '链接分类': 30,
           '已关注': 10
         }
       });

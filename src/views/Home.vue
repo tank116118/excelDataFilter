@@ -274,7 +274,7 @@ const columns = ref([
     key: 'externalUrl'
   },
   {
-    title: '分类链接',
+    title: '链接分类',
     dataIndex: 'categoryUrl',
     width: 150,
     ellipsis: true,
