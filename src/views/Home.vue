@@ -30,16 +30,6 @@
           {{ record.isBusiness ? '是' : '否' }}
         </template>
 
-        <!-- 自定义已关注列 -->
-        <template v-else-if="column.key === 'followedByYou'">
-          <a-button 
-            :type="record.followedByYou ? 'default' : 'primary'" 
-            size="small"
-          >
-            {{ record.followedByYou ? '已关注' : '关注' }}
-          </a-button>
-        </template>
-
         <!-- 导入日期 -->
         <template v-else-if="column.key === 'createdAt'">
           {{ dayjs(record.createdAt).format('YYYY-MM-DD') }}
@@ -121,7 +111,7 @@ async function fetchData(params: any) {
     sortOrder = 'ASC'
   }
 
-  const userListResult = await userDB.queryUsers(conditions, params.page, pagination.value.pageSize, params.sortField, sortOrder);
+  const userListResult = await userDB.fuzzyQueryUsers(conditions, params.page, pagination.value.pageSize, params.sortField, sortOrder);
   const users = userListResult.data || [];
   if (users.length > 0) {
     data.value = users.map((user: any) => ({

@@ -58,6 +58,29 @@ interface QueryConditions {
   originalID?: number; // 添加 originalID 查询条件
 }
 
+interface FuzzyQueryConditions {
+  id?: string | number;               // 支持模糊匹配ID
+  originalID?: string | number;       // 支持模糊匹配originalID
+  userName?: string;                  // 用户名模糊查询
+  fullName?: string;                  // 全名模糊查询
+  email?: string;                     // 邮箱模糊查询
+  phone?: string;                     // 电话模糊查询
+  city?: string;                      // 城市模糊查询
+  address?: string;                   // 地址模糊查询
+  isVerified?: boolean;               // 精确匹配验证状态
+  isPrivate?: boolean;                // 精确匹配隐私状态
+  isBusiness?: boolean;               // 精确匹配商业状态
+  followedByYou?: number;            // 精确匹配关注状态
+  minFollowers?: number;              // 最小粉丝数
+  maxFollowers?: number;              // 最大粉丝数
+  minFollowing?: number;              // 最小关注数
+  maxFollowing?: number;              // 最大关注数
+  createdAfter?: Date;                // 创建时间之后
+  createdBefore?: Date;               // 创建时间之前
+  lastLoginAfter?: Date;              // 最后登录时间之后
+  lastLoginBefore?: Date;             // 最后登录时间之前
+}
+
 // 分页结果接口
 interface PaginatedResult<T> {
   data: T[];
@@ -479,6 +502,189 @@ class UserDatabase {
       pageSize,
       totalPages
     };
+  }
+
+  /**
+   * 模糊查询用户列表（分页）
+   * @param conditions 查询条件
+   * @param page 当前页码（从1开始）
+   * @param pageSize 每页大小
+   * @param sortField 排序字段
+   * @param sortOrder 排序顺序（ASC/DESC）
+   */
+  public async fuzzyQueryUsers(
+    conditions: FuzzyQueryConditions = {},
+    page: number = 1,
+    pageSize: number = 10,
+    sortField: string = 'id',
+    sortOrder: 'ASC' | 'DESC' = 'DESC'
+  ): Promise<PaginatedResult<User>> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // 构建WHERE子句和参数
+    const { whereClause, params } = this.buildFuzzyWhereClause(conditions);
+    const safeWhereClause = whereClause || "WHERE 1=1";
+
+    // 计算分页
+    const offset = (page - 1) * pageSize;
+
+    try {
+      // 获取总数
+      const countResult = await this.execQuery(
+        `SELECT COUNT(*) FROM ${this.tableName} ${safeWhereClause}`,
+        params
+      );
+      const total = countResult.results?.[0]?.values[0]?.[0] as number || 0;
+      const totalPages = Math.ceil(total / pageSize);
+
+      // 获取分页数据
+      const dataResult = await this.execQuery(
+        `SELECT * FROM ${this.tableName} 
+         ${safeWhereClause}
+         ORDER BY ${this.validateSortField(sortField)} ${sortOrder}
+         LIMIT ? OFFSET ?`,
+        [...params, pageSize, offset]
+      );
+
+      const data = (dataResult.results?.[0]?.values.map(row => this.mapUser(row)).filter((u): u is User => u !== null)) || [];
+
+      return {
+        data,
+        total,
+        page,
+        pageSize,
+        totalPages
+      };
+    } catch (error) {
+      console.error('Fuzzy query failed:', {
+        conditions,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * 构建模糊查询的WHERE子句
+   */
+  private buildFuzzyWhereClause(conditions: FuzzyQueryConditions): {
+    whereClause: string;
+    params: SqlValue[];
+  } {
+    const whereClauses: string[] = [];
+    const params: SqlValue[] = [];
+
+    // 数字字段的模糊查询（ID等）
+    if (conditions.id !== undefined) {
+      whereClauses.push('CAST(id AS TEXT) LIKE ?');
+      params.push(`%${conditions.id}%`);
+    }
+
+    if (conditions.originalID !== undefined) {
+      whereClauses.push('CAST(originalID AS TEXT) LIKE ?');
+      params.push(`%${conditions.originalID}%`);
+    }
+
+    // 文本字段的模糊查询
+    if (conditions.userName) {
+      whereClauses.push('userName LIKE ?');
+      params.push(`%${conditions.userName}%`);
+    }
+
+    if (conditions.fullName) {
+      whereClauses.push('fullName LIKE ?');
+      params.push(`%${conditions.fullName}%`);
+    }
+
+    if (conditions.email) {
+      whereClauses.push('email LIKE ?');
+      params.push(`%${conditions.email}%`);
+    }
+
+    if (conditions.phone) {
+      whereClauses.push('phone LIKE ?');
+      params.push(`%${conditions.phone}%`);
+    }
+
+    if (conditions.city) {
+      whereClauses.push('city LIKE ?');
+      params.push(`%${conditions.city}%`);
+    }
+
+    if (conditions.address) {
+      whereClauses.push('address LIKE ?');
+      params.push(`%${conditions.address}%`);
+    }
+
+    // 精确匹配的布尔字段
+    if (conditions.isVerified !== undefined) {
+      whereClauses.push('isVerified = ?');
+      params.push(conditions.isVerified ? 1 : 0);
+    }
+
+    if (conditions.isPrivate !== undefined) {
+      whereClauses.push('isPrivate = ?');
+      params.push(conditions.isPrivate ? 1 : 0);
+    }
+
+    if (conditions.isBusiness !== undefined) {
+      whereClauses.push('isBusiness = ?');
+      params.push(conditions.isBusiness ? 1 : 0);
+    }
+
+    if (conditions.followedByYou !== undefined) {
+      whereClauses.push('followedByYou = ?');
+      params.push(conditions.followedByYou);
+    }
+
+    // 数值范围查询
+    if (conditions.minFollowers !== undefined) {
+      whereClauses.push('followers >= ?');
+      params.push(conditions.minFollowers);
+    }
+
+    if (conditions.maxFollowers !== undefined) {
+      whereClauses.push('followers <= ?');
+      params.push(conditions.maxFollowers);
+    }
+
+    if (conditions.minFollowing !== undefined) {
+      whereClauses.push('following >= ?');
+      params.push(conditions.minFollowing);
+    }
+
+    if (conditions.maxFollowing !== undefined) {
+      whereClauses.push('following <= ?');
+      params.push(conditions.maxFollowing);
+    }
+
+    // 日期范围查询
+    if (conditions.createdAfter) {
+      whereClauses.push('createdAt >= ?');
+      params.push(this.dateToSQLiteString(conditions.createdAfter));
+    }
+
+    if (conditions.createdBefore) {
+      whereClauses.push('createdAt <= ?');
+      params.push(this.dateToSQLiteString(conditions.createdBefore));
+    }
+
+    if (conditions.lastLoginAfter) {
+      whereClauses.push('lastLoginAt >= ?');
+      params.push(this.dateToSQLiteString(conditions.lastLoginAfter));
+    }
+
+    if (conditions.lastLoginBefore) {
+      whereClauses.push('lastLoginAt <= ?');
+      params.push(this.dateToSQLiteString(conditions.lastLoginBefore));
+    }
+
+    // 构建最终的WHERE子句
+    const whereClause = whereClauses.length > 0 
+      ? `WHERE ${whereClauses.join(' AND ')}` 
+      : '';
+
+    return { whereClause, params };
   }
 
   /**

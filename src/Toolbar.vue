@@ -314,7 +314,7 @@ const handleExport = async() => {
     sortOrder = 'ASC'
   }
 
-  const userListResult = await userDB.queryUsers(
+  const userListResult = await userDB.fuzzyQueryUsers(
     conditions,
     1,
     999999999,
